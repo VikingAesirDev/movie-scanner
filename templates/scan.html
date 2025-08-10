@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Movies - Movie Collection Scanner{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-barcode me-2"></i>Scan Movie Barcode
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Camera Section -->
+                    <div id="camera-section">
+                        <div class="text-center mb-3">
+                            <video id="video" width="100%" height="300" autoplay></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                        </div>
+                        
+                        <div class="text-center mb-3">
+                            <button id="capture-btn" class="btn btn-primary btn-lg">
+                                <i class="fas fa-camera me-2"></i>Capture & Scan
+                            </button>
+                            <button id="stop-camera-btn" class="btn btn-secondary ms-2">
+                                <i class="fas fa-stop me-2"></i>Stop Camera
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="manual-search-btn" class="btn btn-outline-primary">
+                                <i class="fas fa-search me-2"></i>Search Manually Instead
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Search Section -->
+                    <div id="manual-search-section" style="display: none;">
+                        <div class="alert alert-info" id="search-reason" style="display: none;">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="search-reason-text"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="movie-title" class="form-label">Movie Title</label>
+                            <input type="text" class="form-control" id="movie-title" placeholder="Enter movie title">
+                        </div>
+                        
+                        <div class="text-center mb-3">
+                            <button id="search-btn" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Search Movie
+                            </button>
+                            <button id="manual-entry-btn" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-edit me-2"></i>Enter Manually
+                            </button>
+                        </div>
+                        
+                        <!-- Future feature placeholder -->
+                        <div class="text-center mb-3">
+                            <button id="photo-search-btn" class="btn btn-outline-info" disabled title="Coming Soon - Search by Cover Photo">
+                                <i class="fas fa-image me-2"></i>Search by Cover Photo (Coming Soon)
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="back-to-camera-btn" class="btn btn-secondary">
+                                <i class="fas fa-camera me-2"></i>Back to Camera
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading Section -->
+                    <div id="loading-section" style="display: none;">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2" id="loading-message">Looking up movie information...</p>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="results-section" style="display: none;">
+                        <hr>
+                        <div class="alert alert-success" id="movie-found-alert" style="display: none;">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Movie details found! Review and edit as needed before adding to your collection.
+                        </div>
+                        
+                        <div class="alert alert-warning" id="manual-entry-alert" style="display: none;">
+                            <i class="fas fa-edit me-2"></i>
+                            Please enter the movie details manually.
+                        </div>
+                        
+                        <h4>Movie Details</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <img id="movie-poster" src="" alt="Movie Poster" class="img-fluid rounded" style="display: none;">
+                                <div id="no-poster" class="text-center p-4 bg-light rounded" style="display: none;">
+                                    <i class="fas fa-film fa-3x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">No poster available</p>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <form id="movie-form">
+                                    <div class="mb-3">
+                                        <label for="form-title" class="form-label">Title *</label>
+                                        <input type="text" class="form-control" id="form-title" required>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="form-year" class="form-label">Year</label>
+                                                <input type="number" class="form-control" id="form-year" min="1900" max="2030">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="form-format" class="form-label">Format</label>
+                                                <select class="form-select" id="form-format">
+                                                    <option value="">Select format</option>
+                                                    <option value="DVD">DVD</option>
+                                                    <option value="Blu-ray">Blu-ray</option>
+                                                    <option value="4K Blu-ray">4K Blu-ray</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="form-director" class="form-label">Director</label>
+                                        <input type="text" class="form-control" id="form-director">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="form-genre" class="form-label">Genre</label>
+                                        <input type="text" class="form-control" id="form-genre">
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="form-location" class="form-label">Storage Location</label>
+                                                <input type="text" class="form-control" id="form-location" placeholder="e.g., Shelf A, Box 1">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="form-condition" class="form-label">Condition</label>
+                                                <select class="form-select" id="form-condition">
+                                                    <option value="Excellent">Excellent</option>
+                                                    <option value="Good" selected>Good</option>
+                                                    <option value="Fair">Fair</option>
+                                                    <option value="Poor">Poor</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <input type="hidden" id="form-barcode">
+                                    <input type="hidden" id="form-tmdb-id">
+                                    <input type="hidden" id="form-poster-url">
+                                    
+                                    <div class="text-center">
+                                        <button type="submit" class="btn btn-success btn-lg">
+                                            <i class="fas fa-plus me-2"></i>Add to Collection
+                                        </button>
+                                        <button type="button" id="scan-another-btn" class="btn btn-outline-primary ms-2">
+                                            <i class="fas fa-barcode me-2"></i>Scan Another
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Success!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Movie has been successfully added to your collection!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                <button type="button" class="btn btn-outline-primary" onclick="window.location.href='/collection'">
+                    View Collection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Error
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="error-message" class="mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let video, canvas, ctx;
+let stream;
+let currentBarcode = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    video = document.getElementById('video');
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d');
+    
+    // Initialize camera
+    initCamera();
+    
+    // Event listeners
+    document.getElementById('capture-btn').addEventListener('click', captureAndScan);
+    document.getElementById('stop-camera-btn').addEventListener('click', stopCamera);
+    document.getElementById('manual-search-btn').addEventListener('click', () => showManualSearch('User chose manual search'));
+    document.getElementById('back-to-camera-btn').addEventListener('click', showCamera);
+    document.getElementById('search-btn').addEventListener('click', searchByTitle);
+    document.getElementById('manual-entry-btn').addEventListener('click', showManualEntry);
+    document.getElementById('scan-another-btn').addEventListener('click', scanAnother);
+    document.getElementById('movie-form').addEventListener('submit', addMovie);
+    
+    // Future feature - disabled for now
+    document.getElementById('photo-search-btn').addEventListener('click', function() {
+        showError('Cover photo search feature is coming soon! For now, please use barcode scanning or manual title search.');
+    });
+    
+    // Enter key support for manual search
+    document.getElementById('movie-title').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchByTitle();
+        }
+    });
+});
+
+async function initCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        });
+        video.srcObject = stream;
+    } catch (err) {
+        console.error('Error accessing camera:', err);
+        showError('Unable to access camera. Please check permissions or try manual search.');
+        showManualSearch('Camera not available');
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    video.srcObject = null;
+}
+
+function showManualSearch(reason) {
+    document.getElementById('camera-section').style.display = 'none';
+    document.getElementById('manual-search-section').style.display = 'block';
+    document.getElementById('results-section').style.display = 'none';
+    
+    // Show reason if provided
+    if (reason) {
+        document.getElementById('search-reason-text').textContent = reason;
+        document.getElementById('search-reason').style.display = 'block';
+    } else {
+        document.getElementById('search-reason').style.display = 'none';
+    }
+    
+    document.getElementById('movie-title').focus();
+}
+
+function showCamera() {
+    document.getElementById('manual-search-section').style.display = 'none';
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('camera-section').style.display = 'block';
+    
+    // Clear any previous search
+    document.getElementById('movie-title').value = '';
+    currentBarcode = null;
+    
+    if (!stream) {
+        initCamera();
+    }
+}
+
+function showLoading(message = 'Looking up movie information...') {
+    document.getElementById('camera-section').style.display = 'none';
+    document.getElementById('manual-search-section').style.display = 'none';
+    document.getElementById('loading-section').style.display = 'block';
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('loading-message').textContent = message;
+}
+
+function hideLoading() {
+    document.getElementById('loading-section').style.display = 'none';
+}
+
+function showManualEntry() {
+    // Go straight to manual entry form with empty data
+    populateMovieForm({}, currentBarcode);
+    showResults(false); // false = manual entry mode
+}
+
+async function captureAndScan() {
+    try {
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas to base64
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        showLoading('Scanning barcode...');
+        
+        // Send image to backend for barcode scanning
+        const response = await fetch('/api/scan_barcode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.barcodes.length > 0) {
+            const barcode = data.barcodes[0].data;
+            currentBarcode = barcode;
+            console.log('Barcode detected:', barcode);
+            
+            // Now search for movie information using the barcode
+            await searchMovieByBarcode(barcode);
+        } else {
+            hideLoading();
+            // Instead of showing error, go to manual search
+            showManualSearch('No barcode detected in image. Please search by title or try scanning again.');
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Scan error:', error);
+        showManualSearch('Error scanning barcode. Please search by title or try again.');
+    }
+}
+
+async function searchMovieByBarcode(barcode) {
+    try {
+        showLoading('Looking up movie details...');
+        
+        // Check if we have the barcode search endpoint (from your updated app.py)
+        const response = await fetch('/api/search_movie_barcode', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ barcode: barcode })
+        });
+        
+        const data = await response.json();
+        
+        hideLoading();
+        
+        if (data.success && data.movie) {
+            // Movie found via barcode - populate form with details
+            populateMovieForm(data.movie, barcode);
+            showResults(true); // true = movie found
+        } else {
+            // Movie not found for barcode - go to manual search instead of direct entry
+            console.log('Movie not found for barcode, showing manual search');
+            showManualSearch(`Barcode ${barcode} detected but movie details not found. Please search by title.`);
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Movie search error:', error);
+        // On any error, go to manual search
+        showManualSearch(`Error looking up barcode ${barcode}. Please search by title.`);
+    }
+}
+
+async function searchByTitle() {
+    const title = document.getElementById('movie-title').value.trim();
+    
+    if (!title) {
+        showError('Please enter a movie title');
+        return;
+    }
+    
+    try {
+        showLoading('Searching for movie...');
+        
+        const response = await fetch('/api/search_movie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: title })
+        });
+        
+        const data = await response.json();
+        
+        hideLoading();
+        
+        if (data.success && data.movie) {
+            populateMovieForm(data.movie, currentBarcode);
+            showResults(true); // true = movie found
+        } else {
+            // Movie not found by title - show manual entry
+            showError('Movie not found. Click "Enter Manually" to add movie details yourself.');
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Search error:', error);
+        showError('Error searching for movie: ' + error.message);
+    }
+}
+
+function populateMovieForm(movieData, barcode = null) {
+    // Populate form fields
+    document.getElementById('form-title').value = movieData.title || '';
+    document.getElementById('form-year').value = movieData.year || '';
+    document.getElementById('form-director').value = movieData.director || '';
+    document.getElementById('form-genre').value = movieData.genre || '';
+    document.getElementById('form-format').value = movieData.format_type || '';
+    document.getElementById('form-barcode').value = barcode || '';
+    document.getElementById('form-tmdb-id').value = movieData.tmdb_id || '';
+    document.getElementById('form-poster-url').value = movieData.poster_url || '';
+    
+    // Show poster if available
+    const posterImg = document.getElementById('movie-poster');
+    const noPoster = document.getElementById('no-poster');
+    
+    if (movieData.poster_url) {
+        posterImg.src = movieData.poster_url;
+        posterImg.style.display = 'block';
+        noPoster.style.display = 'none';
+    } else {
+        posterImg.style.display = 'none';
+        noPoster.style.display = 'block';
+    }
+}
+
+function showResults(movieFound = false) {
+    document.getElementById('camera-section').style.display = 'none';
+    document.getElementById('manual-search-section').style.display = 'none';
+    document.getElementById('loading-section').style.display = 'none';
+    document.getElementById('results-section').style.display = 'block';
+    
+    // Show appropriate alert
+    if (movieFound) {
+        document.getElementById('movie-found-alert').style.display = 'block';
+        document.getElementById('manual-entry-alert').style.display = 'none';
+    } else {
+        document.getElementById('movie-found-alert').style.display = 'none';
+        document.getElementById('manual-entry-alert').style.display = 'block';
+    }
+}
+
+async function addMovie(e) {
+    e.preventDefault();
+    
+    const title = document.getElementById('form-title').value.trim();
+    if (!title) {
+        showError('Please enter a movie title');
+        return;
+    }
+    
+    const formData = {
+        title: title,
+        year: parseInt(document.getElementById('form-year').value) || null,
+        director: document.getElementById('form-director').value,
+        genre: document.getElementById('form-genre').value,
+        format_type: document.getElementById('form-format').value,
+        barcode: document.getElementById('form-barcode').value,
+        tmdb_id: document.getElementById('form-tmdb-id').value,
+        poster_url: document.getElementById('form-poster-url').value,
+        location: document.getElementById('form-location').value,
+        condition: document.getElementById('form-condition').value
+    };
+    
+    try {
+        showLoading('Adding movie to collection...');
+        
+        const response = await fetch('/api/add_movie', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        hideLoading();
+        
+        if (data.success) {
+            // Show success modal
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+            
+            // Reset form
+            document.getElementById('movie-form').reset();
+            document.getElementById('movie-poster').style.display = 'none';
+            document.getElementById('no-poster').style.display = 'none';
+            currentBarcode = null;
+        } else {
+            showError('Error adding movie: ' + (data.error || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Add movie error:', error);
+        showError('Error adding movie: ' + error.message);
+    }
+}
+
+function scanAnother() {
+    // Reset to camera view
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('movie-form').reset();
+    document.getElementById('movie-poster').style.display = 'none';
+    document.getElementById('no-poster').style.display = 'none';
+    currentBarcode = null;
+    showCamera();
+}
+
+function showError(message) {
+    document.getElementById('error-message').textContent = message;
+    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+    errorModal.show();
+}
+
+// Cleanup when page unloads
+window.addEventListener('beforeunload', function() {
+    stopCamera();
+});
+</script>
+{% endblock %}
