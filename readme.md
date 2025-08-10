@@ -27,6 +27,7 @@ A Flask-based web application that allows you to scan movie barcodes and build a
 - pyzbar
 - requests
 - SQLAlchemy
+- nginx (this is necessarry as the camera only works over https)
 
 ## Installation
 
